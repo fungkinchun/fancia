@@ -1,0 +1,437 @@
+# Fancia
+
+Fancia is a social platform connecting people with shared interests for offline, in-person group gatherings and community building.
+
+## README
+
+This project is a backend-focused demonstration of a microservice REST API running on Kubernetes (AWS).
+
+Table of contents
+
+- Overview
+- List of microservices (OpenAPI)
+- Demo (quick start)
+- Technical discussion
+- Kafka example (producer / consumer)
+
+## Overview
+
+A collection of microservices that provide authentication, user management, interest groups, and event management. The infrastructure is maintained in
+[fancia-infra] and [fancia-helm]. The architecture favors small, focused services with explicit APIs and asynchronous messaging for state synchronization when needed.
+
+There are  notes for individual project. Please check it out.
+
+### List of microservices (OpenAPI)
+
+- auth — [Swagger UI](http://fancia.co.uk/auth/swagger-ui/index.html)
+- common — [Swagger UI](http://fancia.co.uk/common/swagger-ui/index.html)
+- user — [Swagger UI](http://fancia.co.uk/user/swagger-ui/index.html)
+- interestgroup — [Swagger UI](http://fancia.co.uk/interestgroup/swagger-ui/index.html)
+- event — [Swagger UI](http://fancia.co.uk/event/swagger-ui/index.html)
+
+### Infrastructure as code
+
+- [fancia-infra](https://github.com/fungkinchun/fancia-infra)
+- [fancia-infra-pipeline](https://github.com/fungkinchun/fancia-infra-pipeline)
+- [fancia-helm](https://github.com/fungkinchun/fancia-helm)
+
+## Demo
+
+Scenario: David Smith wants to host a New Year's Eve event on Fancia and invites his friend Olivia Taylor to join.
+
+1. (David) Create a user
+
+    ```bash
+    curl -X POST "http://fancia.co.uk/user/api/users" \
+    -H "Accept: application/json" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "email": "david.smith@gmail.com",
+        "password": "david-password"
+        "confirmPassword": "david-password",
+        "firstName": "David",
+        "lastName": "Smith"
+    }'
+    ```
+
+    Server response:
+
+    ```json
+    {
+        "id": "7f29c48d-61a3-4e50-9b62-d9f7a831c40b",
+        "role": "USER",
+        "firstName": "David",
+        "lastName": "Smith",
+        "email": "david.smith@gmail.com"
+    }
+    ```
+
+2. (David) Login: [Authorize](http://fancia.co.uk/auth/oauth2/authorize)
+
+    ```bash
+    curl -G \
+    --url "http://fancia.co.uk/auth/oauth2/authorize" \
+    --data-urlencode "client_id=oidc-client" \
+    --data-urlencode "response_type=code" \
+    --data-urlencode "redirect_uri=http://fancia.co.uk/login/oauth2/code/oidc-client" \
+    --data-urlencode "code_challenge=w4Rd9ZVjmm1MZrFXRH0JmbtpOF8SAP6EaUYkOTniY74" \
+    --data-urlencode "code_challenge_method=S256" \
+    --data-urlencode "scope=openid email profile client.create client.read"
+    ```
+
+    Notes: PKCE is a mechanics. secured...
+    you can generate the pair using the following:
+
+    ```bash
+    python3 -c "import os, base64, hashlib; v = base64.urlsafe_b64encode(os.urandom(32)).decode().rstrip('='); c = base64.urlsafe_b64encode(hashlib.sha256(v.encode()).digest()).decode().rstrip('='); print(f'\nCode Verifier:  {v}\nCode Challenge: {c}\n')"
+    ```
+
+    In this example:
+
+    ```bash
+    Code Verifier:  tCBFHPCapt6KonVQJr1peENldIpDKgkit8vBRGjvyII
+    Code Challenge: w4Rd9ZVjmm1MZrFXRH0JmbtpOF8SAP6EaUYkOTniY74
+    ```
+
+3. (David) Get token: [Token endpoint](http://fancia.co.uk/auth/oauth2/token)
+
+    ```bash
+    curl -X POST \
+    --url "http://fancia.co.uk/auth/oauth2/token" \
+    --header "Content-Type: application/x-www-form-urlencoded" \
+    --data-urlencode "grant_type=authorization_code" \
+    --data-urlencode "client_id=oidc-client" \
+    --data-urlencode "code=<your-code>" \
+    --data-urlencode "code_verifier=<your-code-verifier>" \
+    --data-urlencode "redirect_uri=http://fancia.co.uk/login/oauth2/code/oidc-client"
+    ```
+
+4. (David) Create an interest group: [Create interest group](http://fancia.co.uk/interestgroup/api/interest-groups)
+
+    ```bash
+    curl -X POST "http://fancia.co.uk/interestgroup/api/interest-groups" \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer <david-bearer-token>" \
+      -d '{
+        "name": "London celebrations",
+        "description": "Informal meetups and parties around London",
+        "tags": ["london","party","celebration"]
+      }'
+    ```
+
+    Server response:
+
+    ```json
+    {
+        "content": [
+        {
+            "id": "79d3b1e2-4f5a-4b6c-8d9e-0f1a2b3c4d5e",
+            "name": "London celebrations",
+            "description": "Informal meetups and parties around London",
+            "createdBy": "7f29c48d-61a3-4e50-9b62-d9f7a831c40b",
+            "createdAt": "2025-12-30T14:30:25.123456",
+            "tags": ["london","party","celebration"]
+        }]
+    }
+    ```
+
+5. (David) Create an event: [Create event](http://fancia.co.uk/event/api/events)
+
+    ```bash
+    curl -X POST "http://fancia.co.uk/event/api/events" \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer <david-bearer-token>" \
+      -d '{
+        "name": "New Year's Eve 2026"
+        "description": "New Year's Eve Celebrations near London's Eye"
+        "startTime": "2026-01-01T00:00:00",
+        "duration": "PT1H30M",
+        "interestGroupId": "79d3b1e2-4f5a-4b6c-8d9e-0f1a2b3c4d5e",
+        "tags": ["london", "nye", "londonEye"]
+      }'
+    ```
+
+    ```bash
+    {
+        "content": [
+        {
+            "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+            "name": "New Year's Eve 2026"
+            "description": "Informal meetups and parties around London",
+            "createdBy": "7f29c48d-61a3-4e50-9b62-d9f7a831c40b",
+            "createdAt": "2025-12-30T14:30:25.123456",
+            "tags": ["london", "nye", "londonEye"]
+        }]
+    }
+    ```
+
+6. (Olivia) Create a user (Repeat step 1)
+
+    ```bash
+    curl -X POST "http://fancia.co.uk/user/api/users" \
+    -H "Accept: application/json" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "email": "olivia.taylor@gmail.com",
+        "password": "olivia-password"
+        "confirmPassword": "olivia-password",
+        "firstName": "Olivia",
+        "lastName": "Taylor"
+    }'
+    ```
+
+    Server response:
+
+    ```json
+    {
+        "id": "9b3e1a74-d2c5-4f80-b6a1-3e4729f5d082",
+        "role": "USER",
+        "firstName": "Olivia",
+        "lastName": "Taylor",
+        "email": "olivia.taylor@gmail.com"
+    }
+    ```
+
+7. (Olivia) Get authorization token (Repeat step 2 & 3)
+
+8. (Olivia) Join an interest group: [Join interest group](http://fancia.co.uk/interestgroup/api/interest-groups/{interestGroupId}/memberships)
+
+    ```bash
+    curl -X POST "http://fancia.co.uk/interestgroup/api/interest-groups/79d3b1e2-4f5a-4b6c-8d9e-0f1a2b3c4d5e/memberships" \
+     -H "Content-Type: application/json" \
+    -H "Authorization: Bearer <olivia-bearer-token>" \
+    -d '{
+        "payload": ""
+    }'
+    ```
+
+9. (Olivia) Join a reservation for an event: `POST /event/api/events/{eventId}/reservations`
+
+    ```bash
+    curl -X POST "http://fancia.co.uk/event/api/events/f47ac10b-58cc-4372-a567-0e02b2c3d479/reservations" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer <olivia-bearer-token>" \
+    -d '{
+        "guest": 0,
+        "payload": ""
+    }'
+
+10. (Host) Approve a reservation: `PATCH /event/api/events/{eventId}/users/{userId}/reservations`
+
+    ```bash
+    curl -X PATCH "http://fancia.co.uk//event/api/events/f47ac10b-58cc-4372-a567-0e02b2c3d479/users/9b3e1a74-d2c5-4f80-b6a1-3e4729f5d082/reservations" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer <david-bearer-token>" \
+    -d '{
+        "guest": 0,
+        "payload": "",
+        "status": "ACCEPTED"
+    }'
+    ```
+
+11. (Olivia) Look for event participants: `GET /event/api/events/{eventId}/participants`
+
+    ```bash
+    curl -X GET "https://api.fancia.com/events/f47ac10b-58cc-4372-a567-0e02b2c3d479/participants?page=0&size=20" \
+    -H "Accept: application/json"
+    ```
+
+    Server response:
+
+    ```json
+    {
+        "content": [
+        {
+            "userId": "7f29c48d-61a3-4e50-9b62-d9f7a831c40b",
+            "role": "HOST"
+        },
+        {
+            "userId": "9b3e1a74-d2c5-4f80-b6a1-3e4729f5d082",
+            "role": "Guest"
+        }]
+    }
+    ```
+
+Notes:
+
+- Replace the `{eventId}` and `{userId}` placeholders with the actual IDs returned by the API.
+- To register OIDC clients, see the [auth](https://github.com/fungkinchun/fancia-backend-auth) service repository and its README for registration endpoints and examples; pay attention to redirect URIs, required scopes, PKCE for public clients, and secure storage of client secrets.
+- Most list endpoints are using Fuzzy search
+
+## Technical discussion
+
+This section summarizes key architectural decisions and operational practices used across the platform.
+
+### Library sharing
+
+The codebase is Kotlin-first and shares common models and utilities via a set of shared repositories published as artifacts. Consumers include service modules that import the shared artifacts via Gradle/Maven.
+
+- [shared-common](https://github.com/fungkinchun/fancia-backend-shared-common)
+- [shared-user](https://github.com/fungkinchun/fancia-backend-shared-user)
+- [shared-interestgroup](https://github.com/fungkinchun/fancia-backend-shared-interestgroup)
+- [shared-event](https://github.com/fungkinchun/fancia-backend-shared-event)
+
+Notes:
+
+- Publish shared modules to an internal artifact repository on CodeArtifact for stable consumption.
+- Keep shared DTOs and serialization stable and versioned to avoid breaking consumers.
+
+### Inter-service communications
+
+The system uses two primary communication patterns:
+
+#### Synchronous HTTP between services (OpenFeign)
+
+OpenFeign is used for simple request/response calls between services (e.g., lookup operations, authorization checks).
+
+One example is when marking a user for deletion, the system checks whether the user still holds any administrative memberships; if any are found, deletion is rejected to prevent orphaning resources and preserve data integrity.
+
+```kotlin
+package com.fancia.backend.user.external
+
+import com.fancia.backend.shared.interestgroup.core.dto.InterestGroupMembershipResponse
+import com.fancia.backend.shared.interestgroup.core.enums.InterestGroupRole
+import com.fancia.backend.user.config.FeignConfig
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.data.domain.Page
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestParam
+import java.util.*
+
+@FeignClient(name = "interestgroup-service", path = "/api", configuration = [FeignConfig::class])
+interface InterestGroupServiceClient {
+    @GetMapping("/interest-groups/users/{userId}/memberships")
+    fun getInterestGroupMembership(
+        @RequestParam("userId") userId: UUID,
+        @RequestParam("role") role: InterestGroupRole = InterestGroupRole.ADMIN,
+        @RequestParam(value = "page", required = false) page: Int = 0,
+        @RequestParam(value = "size", required = false) size: Int = 20
+    ): Page<InterestGroupMembershipResponse>
+}
+```
+
+#### Asynchronous messaging (Kafka)
+
+Kafka is used for propagating domain events (deletions, updates) and for decoupling services that should react to changes eventually.
+
+#### Example: user deletion (producer)
+
+```kotlin
+package com.fancia.backend.user.core.message
+
+import com.fancia.backend.shared.user.core.message.UserDeletedEvent
+import org.springframework.kafka.core.KafkaTemplate
+import org.springframework.stereotype.Service
+import java.util.*
+
+@Service
+class UserProducer(
+    private val kafkaTemplate: KafkaTemplate<UUID, Any>
+) {
+    fun publishUserDeleted(event: UserDeletedEvent) {
+        kafkaTemplate.send("users", event.id, event)
+            .whenComplete { result, ex -> }
+    }
+}
+```
+
+#### Example: user deletion (consumer)
+
+```kotlin
+package com.fancia.backend.interestgroup.core.message
+
+import com.fancia.backend.interestgroup.core.service.InterestGroupMembershipService
+import com.fancia.backend.shared.user.core.message.UserDeletedEvent
+import org.springframework.kafka.annotation.KafkaListener
+import org.springframework.stereotype.Component
+
+@Component
+class UserConsumer(
+    private val interestGroupMembershipService: InterestGroupMembershipService
+) {
+    @KafkaListener(topics = ["users"], groupId = "deletion")
+    fun onUserDeleted(event: UserDeletedEvent) {
+        interestGroupMembershipService.removeMemberFromAllGroups(event.id)
+    }
+}
+```
+
+### Testing
+
+#### Integration tests
+
+Kotest is used as the primary test framework. External HTTP dependencies are mocked with WireMock running inside a Testcontainers WireMockContainer. Integration tests use Testcontainers to run databases, Kafka, and other dependencies locally in CI. Controller-level requests are exercised with Spring's MockMvc.
+
+Typical test class pattern used in the repo:
+
+- Annotate with `@SpringBootTest`, `@AutoConfigureMockMvc`, `@Testcontainers`, and `@Import(TestConfig::class)`.
+- Inject `WireMockContainer` and configure the WireMock client in a test setup (for example, `configureFor(wiremock.host, wiremock.getMappedPort(8080))`).
+- Use a `JsonMapper` for serialization/deserialization and a mapper (e.g., `UserMapper`) to convert shared DTOs to domain beans.
+
+Summary of example test: `UserControllerIntegrationTest`
+
+- Purpose: an end-to-end controller integration test that verifies user creation, persistence, external service interaction, and guarded deletion behavior.
+
+- Flow and assertions:
+  1. POST `/api/users` via `MockMvc` with a JSON payload (email, password, confirmPassword, firstName, lastName).
+  2. Assert the response is 200 OK and that the JSON body contains the expected `email` and a non-null `id`.
+  3. Convert the response JSON to a domain `User` using `JsonMapper` and `UserMapper`, then verify persistence with `userRepository.findByIdOrNull`.
+  4. Stub the interestgroup service's membership endpoint using WireMock to return an ADMIN membership page for the created user.
+  5. Attempt DELETE `/api/users/{id}` with a JWT that contains the `userId` claim; expect `400 Bad Request` (deletion is prevented due to existing memberships).
+
+- Helper used in the test:
+  - `ResultActionsDsl.toUser(jsonMapper, userMapper)` extension converts the MockMvc response into a `User` domain object by reading `UserResponse` and mapping it.
+
+Best practices and tips for integration tests in this repo:
+
+- Reset WireMock stubs between tests (e.g., `wiremock.resetAll()`) to avoid cross-test interference.
+- Use Testcontainers' reusable containers in CI where possible; ensure proper startup timeouts and container health checks.
+- Clean or seed the database between tests to keep tests isolated and deterministic.
+- Make external service stubs return representative paginated responses and edge cases (empty results, errors) to exercise failure modes.
+
+### Monitoring and observability
+
+This project uses Prometheus, Grafana, Loki, and Alloy to provide metrics, dashboards, and centralized logs. Alloy is typically deployed as a logging sidecar that captures container stdout/stderr and forwards logs to Loki through the Kubernetes logging pipeline. Prometheus scrapes application metrics (for example, via /actuator/prometheus) and Grafana is used to visualize both metrics and Loki queries so you can correlate telemetry with logs.
+
+API errors are commonly handled by a `ValidationHandler` present in each service. A typical error response looks like:
+
+```json
+{
+  "detail": "Validation failed: User with this email already exists",
+  "instance": "/user/api/users",
+  "status": 400,
+  "title": "Validation Error",
+  "type": "fancia.co.uk/user/api",
+  "errorCode": "VALIDATION_ERROR"
+}
+```
+
+To locate related logs in Grafana (Loki) use a query such as:
+
+```loki
+{namespace="fancia-prod", service_name="user"} |= "Validation Error"
+```
+
+This query returns application logs from the user service in the production namespace that include the "Validation Error" title. For more effective troubleshooting, augment queries with labels such as pod, container, or request id and use Grafana's Explore view to correlate logs and metrics.
+
+#### Kubernetes cluster logs
+
+Cluster-level logs and Kubernetes events can be viewed in Grafana dashboards or via cloud provider consoles and tools. In AWS, enable control plane logging and aggregate node and kubelet logs to a central store for auditing and incident investigation.
+
+#### Infrastructure logs
+
+Infrastructure events and API-level audit trails are available in AWS CloudTrail, while CloudWatch collects logs and metrics emitted by AWS services and custom agents. Use CloudTrail for who-did-what auditing and CloudWatch for operational telemetry; together they provide comprehensive visibility for security and incident response.
+
+### Challenges and future improvements
+
+#### Working with MapStruct
+
+MapStruct can be awkward in Kotlin projects because MapStruct expects Java-style setters and constructors. Kotlin data classes and val properties sometimes prevent MapStruct from generating direct mappings. To reduce friction, configure kapt and MapStruct correctly, use `@Mapper(componentModel = "spring")`, provide no-arg constructors or `@Default` values for targets when needed, or use `var` properties for mapped targets. For complex mapping scenarios, consider Kotlin-native alternatives such as Konvert or manual mappers that avoid annotation processing and produce more idiomatic Kotlin code.
+
+#### Caching
+
+Introduce Redis for query caching or session storage where appropriate, but pay careful attention to cache invalidation, key design, and TTLs. To maintain consistency between caches and the source of truth, consider event-driven invalidation patterns using Kafka domain events so services can react to state changes and refresh or evict stale entries.
+
+#### Adoption of Elasticsearch
+
+This project currently uses PostgreSQL's `pg_trgm` extension (trigram matching) for fuzzy search. It is a lightweight, low-overhead option that works well for typo-tolerant lookups and LIKE-based queries without introducing extra infrastructure. For requirements that need richer full-text features, custom analyzers, complex relevance tuning, or higher-scale search performance, consider introducing Elasticsearch.
