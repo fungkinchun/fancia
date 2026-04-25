@@ -47,7 +47,7 @@ Scenario: David Smith wants to host a New Year's Eve event on Fancia and invites
     -H "Content-Type: application/json" \
     -d '{
         "email": "david.smith@gmail.com",
-        "password": "david-password"
+        "password": "david-password",
         "confirmPassword": "david-password",
         "firstName": "David",
         "lastName": "Smith"
@@ -58,29 +58,30 @@ Scenario: David Smith wants to host a New Year's Eve event on Fancia and invites
 
     ```json
     {
-        "id": "7f29c48d-61a3-4e50-9b62-d9f7a831c40b",
+        "id": "67ef441d-6f2e-4375-8b3b-da53eb0060f7",
         "role": "USER",
         "firstName": "David",
         "lastName": "Smith",
-        "email": "david.smith@gmail.com"
+        "email": "david.smith@gmail.com",
+        "profileImageUrl": "",
+        "connectedAccounts": [],
+        "authorities": [
+            "ROLE_USER"
+        ]
     }
     ```
 
 2. (David) Login: [Authorize](http://fancia.co.uk/auth/oauth2/authorize)
 
+    Navigate to the following URL in your browser (this is an interactive endpoint):
+
     ```bash
-    curl -G \
-    --url "http://fancia.co.uk/auth/oauth2/authorize" \
-    --data-urlencode "client_id=oidc-client" \
-    --data-urlencode "response_type=code" \
-    --data-urlencode "redirect_uri=http://fancia.co.uk/login/oauth2/code/oidc-client" \
-    --data-urlencode "code_challenge=w4Rd9ZVjmm1MZrFXRH0JmbtpOF8SAP6EaUYkOTniY74" \
-    --data-urlencode "code_challenge_method=S256" \
-    --data-urlencode "scope=openid email profile client.create client.read"
+    http://fancia.co.uk/auth/oauth2/authorize?client_id=oidc-client&response_type=code&redirect_uri=http%3A%2F%2Ffancia.co.uk%2Flogin%2Foauth2%2Fcode%2Foidc-client&code_challenge=w4Rd9ZVjmm1MZrFXRH0JmbtpOF8SAP6EaUYkOTniY74&code_challenge_method=S256&scope=openid%20email%20profile%20client.create%20client.read
     ```
 
-    Notes: PKCE is a mechanics. secured...
-    you can generate the pair using the following:
+    This is interactive endpoint, use browser instead of cli
+
+    **PKCE (Proof Key for Code Exchange)**: This is a security mechanism for OAuth 2.0 authorization code flow. You can generate a code verifier/challenge pair using the following command:
 
     ```bash
     python3 -c "import os, base64, hashlib; v = base64.urlsafe_b64encode(os.urandom(32)).decode().rstrip('='); c = base64.urlsafe_b64encode(hashlib.sha256(v.encode()).digest()).decode().rstrip('='); print(f'\nCode Verifier:  {v}\nCode Challenge: {c}\n')"
