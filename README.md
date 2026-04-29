@@ -76,7 +76,7 @@ Scenario: David Smith wants to host a New Year's Eve event on Fancia and invites
     Navigate to the following URL in your browser (this is an interactive endpoint):
 
     ```bash
-    http://fancia.co.uk/auth/oauth2/authorize?client_id=oidc-client&response_type=code&redirect_uri=http%3A%2F%2Ffancia.co.uk%2Flogin%2Foauth2%2Fcode%2Foidc-client&code_challenge=w4Rd9ZVjmm1MZrFXRH0JmbtpOF8SAP6EaUYkOTniY74&code_challenge_method=S256&scope=openid%20email%20profile%20client.create%20client.read
+    http://fancia.co.uk/auth/oauth2/authorize?client_id=oidc-client&response_type=code&redirect_uri=http%3A%2F%2Ffancia.co.uk%2Flogin%2Foauth2%2Fcode%2Foidc-client&code_challenge=<your-code-challenge>&code_challenge_method=S256&scope=openid%20email%20profile%20client.create%20client.read
     ```
 
     This is interactive endpoint, use browser instead of cli
@@ -94,6 +94,18 @@ Scenario: David Smith wants to host a New Year's Eve event on Fancia and invites
     Code Challenge: w4Rd9ZVjmm1MZrFXRH0JmbtpOF8SAP6EaUYkOTniY74
     ```
 
+    ```bash
+     http://fancia.co.uk/auth/oauth2/authorize?client_id=oidc-client&response_type=code&redirect_uri=http%3A%2F%2Ffancia.co.uk%2Flogin%2Foauth2%2Fcode%2Foidc-client&code_challenge=w4Rd9ZVjmm1MZrFXRH0JmbtpOF8SAP6EaUYkOTniY74&code_challenge_method=S256&scope=openid%20email%20profile%20client.create%20client.read
+    ```
+
+    Server response:
+
+    In normal cases, you will be redirected to the URI you specified. Here we just extract the authorization code:
+
+    ```
+    http://fancia.co.uk/login/oauth2/code/oidc-client?code=Sdy6N9PbMkgGQLOJODLbnbinPcEnj89Hg8ncLsZEt_snhRxbUH_af6la_p103XALCDiABZ_lxt3mLU1VWmiacGteGgbiL6-qd7tdegeZ5_bYooU7Fc_efmVl-Kn6-HFt
+    ```
+
 3. (David) Get token: [Token endpoint](http://fancia.co.uk/auth/oauth2/token)
 
     ```bash
@@ -102,9 +114,48 @@ Scenario: David Smith wants to host a New Year's Eve event on Fancia and invites
     --header "Content-Type: application/x-www-form-urlencoded" \
     --data-urlencode "grant_type=authorization_code" \
     --data-urlencode "client_id=oidc-client" \
-    --data-urlencode "code=<your-code>" \
-    --data-urlencode "code_verifier=<your-code-verifier>" \
+    --data-urlencode "code=<Sdy6N9PbMkgGQLOJODLbnbinPcEnj89Hg8ncLsZEt_snhRxbUH_af6la_p103XALCDiABZ_lxt3mLU1VWmiacGteGgbiL6-qd7tdegeZ5_bYooU7Fc_efmVl-Kn6-HFt" \
+    --data-urlencode "code_verifier=tCBFHPCapt6KonVQJr1peENldIpDKgkit8vBRGjvyII" \
     --data-urlencode "redirect_uri=http://fancia.co.uk/login/oauth2/code/oidc-client"
+    ```
+
+    Server response:
+
+    ```json
+    {
+        "access_token":"eyJraWQiOiI1MTkxOGU5Mi03NzQ0LTRiYmItYjU4YS04NjM0N2Q1NTczMmMiLCJhbGciOiJSUzI1NiJ9...",
+        "scope":"openid profile client.create client.read email","id_token":"eyJraWQiOiI1MTkxOGU5Mi03NzQ0LTRiYmItYjU4YS04NjM0N2Q1NTczMmMiLCJhbGciOiJSUzI1NiJ9...",
+        "token_type":"Bearer",
+        "expires_in":604799
+    }
+    ```
+
+    The decoded token:
+
+    ```json
+    {
+        "sub": "david.smith@gmail.com",
+        "aud": "oidc-client",
+        "nbf": 1777134755,
+        "scope": [
+            "openid",
+            "profile",
+            "client.create",
+            "client.read",
+            "email"
+        ],
+        "iss": "http://fancia.co.uk/auth",
+        "name": "David Smith",
+        "exp": 1777739555,
+        "iat": 1777134755,
+        "userId": "71745f5a-cdd9-486d-ad4e-98916472e0db",
+        "jti": "02736be2-a5d3-4ed0-93e5-acdaaaba70c9",
+        "authorities": [
+            "ROLE_USER",
+            "FACTOR_PASSWORD"
+        ],
+        "email": "david.smith@gmail.com"
+    }
     ```
 
 4. (David) Create an interest group: [Create interest group](http://fancia.co.uk/interestgroup/api/interest-groups)
@@ -112,7 +163,7 @@ Scenario: David Smith wants to host a New Year's Eve event on Fancia and invites
     ```bash
     curl -X POST "http://fancia.co.uk/interestgroup/api/interest-groups" \
       -H "Content-Type: application/json" \
-      -H "Authorization: Bearer <david-bearer-token>" \
+      -H "Authorization: Bearer eyJraWQiOiI1MTkxOGU5Mi03NzQ0LTRiYmItYjU4YS04NjM0N2Q1NTczMmMiLCJhbGciOiJSUzI1NiJ9..." \
       -d '{
         "name": "London celebrations",
         "description": "Informal meetups and parties around London",
@@ -314,6 +365,40 @@ interface InterestGroupServiceClient {
 #### Asynchronous messaging (Kafka)
 
 Kafka is used for propagating domain events (deletions, updates) and for decoupling services that should react to changes eventually.
+
+##### Key Concepts
+
+- Bootstrap Servers: Initial connection points that clients use to discover the full cluster topology
+- Partitions: Units of scalability and ordering; messages with the same key are routed to the same partition to maintain order
+- Replication: Kafka's durability mechanism using a leader-follower pattern where each partition has one leader and multiple followers
+- Pull-based Architecture: Consumers actively pull messages from brokers, and follower replicas pull data from partition leaders
+
+##### Idempotent Producers
+
+Idempotence is enabled by default with `enable.idempotence: true`. An idempotent producer ensures that no matter how many times you send the same message, the result is the same as sending it once.
+
+Without idempotence in Kafka:
+
+- If a message fails to be acknowledged (due to network issues, timeouts, etc.), the producer will retry
+- This can result in duplicate messages being written to the topic
+
+##### How Idempotent Producers Work
+
+Kafka's idempotent producer solves the duplication problem by guaranteeing that each message is written only once, even if retried multiple times. It uses these mechanisms:
+
+- Producer ID (PID): Each producer instance receives a unique identifier from the broker
+- Sequence Numbers: Every message gets a sequence number per partition  
+- Broker-side Deduplication: The broker tracks the (PID + Sequence Number) combination and ignores duplicates
+
+This enables safe retries without creating duplicate messages.
+
+##### Configuration Requirements
+
+For idempotent producers to work correctly, the following settings are required:
+
+- `acks=all` - Wait for acknowledgment from all in-sync replicas
+- `retries > 0` - Enable retry attempts for failed sends
+- `max.in.flight.requests.per.connection ≤ 5` - Limit concurrent requests to maintain ordering
 
 #### Example: user deletion (producer)
 
