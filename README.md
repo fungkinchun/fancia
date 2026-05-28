@@ -17,17 +17,17 @@ Table of contents
 ## Overview
 
 A collection of microservices that provide authentication, user management, interest groups, and event management. The infrastructure is maintained in
-[fancia-infra] and [fancia-helm]. The architecture favors small, focused services with explicit APIs and asynchronous messaging for state synchronization when needed.
+[fancia-infra](https://github.com/fungkinchun/fancia-infra) and [fancia-helm](https://github.com/fungkinchun/fancia-helm). The architecture favors small, focused services with explicit APIs and asynchronous messaging for state synchronization when needed.
 
 There are  notes for individual project. Please check it out.
 
 ### List of microservices (OpenAPI)
 
-- auth — [Swagger UI](http://fancia.co.uk/auth/swagger-ui/index.html)
-- common — [Swagger UI](http://fancia.co.uk/common/swagger-ui/index.html)
-- user — [Swagger UI](http://fancia.co.uk/user/swagger-ui/index.html)
-- interestgroup — [Swagger UI](http://fancia.co.uk/interestgroup/swagger-ui/index.html)
-- event — [Swagger UI](http://fancia.co.uk/event/swagger-ui/index.html)
+- auth — [Swagger UI](https://api.fancia.co.uk/auth/swagger-ui/index.html)
+- common — [Swagger UI](https://api.fancia.co.uk/common/swagger-ui/index.html)
+- user — [Swagger UI](https://api.fancia.co.uk/user/swagger-ui/index.html)
+- interestgroup — [Swagger UI](https://api.fancia.co.uk/interestgroup/swagger-ui/index.html)
+- event — [Swagger UI](https://api.fancia.co.uk/event/swagger-ui/index.html)
 
 ### Infrastructure as code
 
@@ -42,7 +42,7 @@ Scenario: David Smith wants to host a New Year's Eve event on Fancia and invites
 1. (David) Create a user
 
     ```bash
-    curl -X POST "http://fancia.co.uk/user/api/users" \
+    curl -X POST "https://api.fancia.co.uk/user/api/users" \
     -H "Accept: application/json" \
     -H "Content-Type: application/json" \
     -d '{
@@ -71,12 +71,12 @@ Scenario: David Smith wants to host a New Year's Eve event on Fancia and invites
     }
     ```
 
-2. (David) Login: [Authorize](http://fancia.co.uk/auth/oauth2/authorize)
+2. (David) Login: [Authorize](https://api.fancia.co.uk/auth/oauth2/authorize)
 
     Navigate to the following URL in your browser (this is an interactive endpoint):
 
     ```bash
-    http://fancia.co.uk/auth/oauth2/authorize?client_id=oidc-client&response_type=code&redirect_uri=http%3A%2F%2Ffancia.co.uk%2Flogin%2Foauth2%2Fcode%2Foidc-client&code_challenge=<your-code-challenge>&code_challenge_method=S256&scope=openid%20email%20profile%20client.create%20client.read
+    https://api.fancia.co.uk/auth/oauth2/authorize?client_id=oidc-client&response_type=code&redirect_uri=http%3A%2F%2Ffancia.co.uk%2Flogin%2Foauth2%2Fcode%2Foidc-client&code_challenge=<your-code-challenge>&code_challenge_method=S256&scope=openid%20email%20profile%20client.create%20client.read
     ```
 
     This is interactive endpoint, use browser instead of cli
@@ -95,7 +95,7 @@ Scenario: David Smith wants to host a New Year's Eve event on Fancia and invites
     ```
 
     ```bash
-     http://fancia.co.uk/auth/oauth2/authorize?client_id=oidc-client&response_type=code&redirect_uri=http%3A%2F%2Ffancia.co.uk%2Flogin%2Foauth2%2Fcode%2Foidc-client&code_challenge=w4Rd9ZVjmm1MZrFXRH0JmbtpOF8SAP6EaUYkOTniY74&code_challenge_method=S256&scope=openid%20email%20profile%20client.create%20client.read
+     https://api.fancia.co.uk/auth/oauth2/authorize?client_id=oidc-client&response_type=code&redirect_uri=https%3A%2F%2Ffancia.co.uk%2Flogin%2Foauth2%2Fcode%2Foidc-client&code_challenge=w4Rd9ZVjmm1MZrFXRH0JmbtpOF8SAP6EaUYkOTniY74&code_challenge_method=S256&scope=openid%20email%20profile%20client.create%20client.read
     ```
 
     Server response:
@@ -103,20 +103,20 @@ Scenario: David Smith wants to host a New Year's Eve event on Fancia and invites
     In normal cases, you will be redirected to the URI you specified. Here we just extract the authorization code:
 
     ```
-    http://fancia.co.uk/login/oauth2/code/oidc-client?code=Sdy6N9PbMkgGQLOJODLbnbinPcEnj89Hg8ncLsZEt_snhRxbUH_af6la_p103XALCDiABZ_lxt3mLU1VWmiacGteGgbiL6-qd7tdegeZ5_bYooU7Fc_efmVl-Kn6-HFt
+    https://api.fancia.co.uk/login/oauth2/code/oidc-client?code=Sdy6N9PbMkgGQLOJODLbnbinPcEnj89Hg8ncLsZEt_snhRxbUH_af6la_p103XALCDiABZ_lxt3mLU1VWmiacGteGgbiL6-qd7tdegeZ5_bYooU7Fc_efmVl-Kn6-HFt
     ```
 
-3. (David) Get token: [Token endpoint](http://fancia.co.uk/auth/oauth2/token)
+3. (David) Get token: [Token endpoint](https://api.fancia.co.uk/auth/oauth2/token)
 
     ```bash
     curl -X POST \
-    --url "http://fancia.co.uk/auth/oauth2/token" \
+    --url "https://api.fancia.co.uk/auth/oauth2/token" \
     --header "Content-Type: application/x-www-form-urlencoded" \
     --data-urlencode "grant_type=authorization_code" \
     --data-urlencode "client_id=oidc-client" \
     --data-urlencode "code=<Sdy6N9PbMkgGQLOJODLbnbinPcEnj89Hg8ncLsZEt_snhRxbUH_af6la_p103XALCDiABZ_lxt3mLU1VWmiacGteGgbiL6-qd7tdegeZ5_bYooU7Fc_efmVl-Kn6-HFt" \
     --data-urlencode "code_verifier=tCBFHPCapt6KonVQJr1peENldIpDKgkit8vBRGjvyII" \
-    --data-urlencode "redirect_uri=http://fancia.co.uk/login/oauth2/code/oidc-client"
+    --data-urlencode "redirect_uri=https://api.fancia.co.uk/login/oauth2/code/oidc-client"
     ```
 
     Server response:
@@ -144,7 +144,7 @@ Scenario: David Smith wants to host a New Year's Eve event on Fancia and invites
             "client.read",
             "email"
         ],
-        "iss": "http://fancia.co.uk/auth",
+        "iss": "https://api.fancia.co.uk/auth",
         "name": "David Smith",
         "exp": 1777739555,
         "iat": 1777134755,
@@ -158,10 +158,10 @@ Scenario: David Smith wants to host a New Year's Eve event on Fancia and invites
     }
     ```
 
-4. (David) Create an interest group: [Create interest group](http://fancia.co.uk/interestgroup/api/interest-groups)
+4. (David) Create an interest group: [Create interest group](https://api.fancia.co.uk/interestgroup/api/interest-groups)
 
     ```bash
-    curl -X POST "http://fancia.co.uk/interestgroup/api/interest-groups" \
+    curl -X POST "https://api.fancia.co.uk/interestgroup/api/interest-groups" \
       -H "Content-Type: application/json" \
       -H "Authorization: Bearer eyJraWQiOiI1MTkxOGU5Mi03NzQ0LTRiYmItYjU4YS04NjM0N2Q1NTczMmMiLCJhbGciOiJSUzI1NiJ9..." \
       -d '{
@@ -187,10 +187,10 @@ Scenario: David Smith wants to host a New Year's Eve event on Fancia and invites
     }
     ```
 
-5. (David) Create an event: [Create event](http://fancia.co.uk/event/api/events)
+5. (David) Create an event: [Create event](https://api.fancia.co.uk/event/api/events)
 
     ```bash
-    curl -X POST "http://fancia.co.uk/event/api/events" \
+    curl -X POST "https://api.fancia.co.uk/event/api/events" \
       -H "Content-Type: application/json" \
       -H "Authorization: Bearer <david-bearer-token>" \
       -d '{
@@ -220,7 +220,7 @@ Scenario: David Smith wants to host a New Year's Eve event on Fancia and invites
 6. (Olivia) Create a user (Repeat step 1)
 
     ```bash
-    curl -X POST "http://fancia.co.uk/user/api/users" \
+    curl -X POST "https://api.fancia.co.uk/user/api/users" \
     -H "Accept: application/json" \
     -H "Content-Type: application/json" \
     -d '{
@@ -246,10 +246,10 @@ Scenario: David Smith wants to host a New Year's Eve event on Fancia and invites
 
 7. (Olivia) Get authorization token (Repeat step 2 & 3)
 
-8. (Olivia) Join an interest group: [Join interest group](http://fancia.co.uk/interestgroup/api/interest-groups/{interestGroupId}/memberships)
+8. (Olivia) Join an interest group: [Join interest group](https://api.fancia.co.uk/interestgroup/api/interest-groups/{interestGroupId}/memberships)
 
     ```bash
-    curl -X POST "http://fancia.co.uk/interestgroup/api/interest-groups/79d3b1e2-4f5a-4b6c-8d9e-0f1a2b3c4d5e/memberships" \
+    curl -X POST "https://api.fancia.co.uk/interestgroup/api/interest-groups/79d3b1e2-4f5a-4b6c-8d9e-0f1a2b3c4d5e/memberships" \
      -H "Content-Type: application/json" \
     -H "Authorization: Bearer <olivia-bearer-token>" \
     -d '{
@@ -260,7 +260,7 @@ Scenario: David Smith wants to host a New Year's Eve event on Fancia and invites
 9. (Olivia) Join a reservation for an event: `POST /event/api/events/{eventId}/reservations`
 
     ```bash
-    curl -X POST "http://fancia.co.uk/event/api/events/f47ac10b-58cc-4372-a567-0e02b2c3d479/reservations" \
+    curl -X POST "https://api.fancia.co.uk/event/api/events/f47ac10b-58cc-4372-a567-0e02b2c3d479/reservations" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer <olivia-bearer-token>" \
     -d '{
@@ -271,7 +271,7 @@ Scenario: David Smith wants to host a New Year's Eve event on Fancia and invites
 10. (Host) Approve a reservation: `PATCH /event/api/events/{eventId}/users/{userId}/reservations`
 
     ```bash
-    curl -X PATCH "http://fancia.co.uk//event/api/events/f47ac10b-58cc-4372-a567-0e02b2c3d479/users/9b3e1a74-d2c5-4f80-b6a1-3e4729f5d082/reservations" \
+    curl -X PATCH "https://api.fancia.co.uk//event/api/events/f47ac10b-58cc-4372-a567-0e02b2c3d479/users/9b3e1a74-d2c5-4f80-b6a1-3e4729f5d082/reservations" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer <david-bearer-token>" \
     -d '{
