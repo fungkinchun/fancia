@@ -28,6 +28,9 @@ There are  notes for individual project. Please check it out.
 - user — [Swagger UI](https://api.fancia.co.uk/user/swagger-ui/index.html)
 - interestgroup — [Swagger UI](https://api.fancia.co.uk/interestgroup/swagger-ui/index.html)
 - event — [Swagger UI](https://api.fancia.co.uk/event/swagger-ui/index.html)
+- upload — [Swagger UI](https://api.fancia.co.uk/upload/swagger-ui/index.html)
+
+- venue - [Swagger UI](https://api.fancia.co.uk/venue/swagger-ui/index.html)
 
 ### Infrastructure as code
 
@@ -513,6 +516,10 @@ Infrastructure events and API-level audit trails are available in AWS CloudTrail
 #### Working with MapStruct
 
 MapStruct can be awkward in Kotlin projects because MapStruct expects Java-style setters and constructors. Kotlin data classes and val properties sometimes prevent MapStruct from generating direct mappings. To reduce friction, configure kapt and MapStruct correctly, use `@Mapper(componentModel = "spring")`, provide no-arg constructors or `@Default` values for targets when needed, or use `var` properties for mapped targets. For complex mapping scenarios, consider Kotlin-native alternatives such as Konvert or manual mappers that avoid annotation processing and produce more idiomatic Kotlin code.
+
+When you define a field with a default value in Kotlin, that default only applies when the object is constructed the normal Kotlin way. MapStruct does not construct objects that way. It generates Java code that builds instances through its own mapping process, and for fields it does not map from the source, it often leaves them unset or explicitly null at runtime, even when the Kotlin declaration says they cannot be null and even when a default was written in the class.
+
+That gap between what the type system promises and what actually exists on the JVM is the heart of the problem. Kotlin’s non-null types are a compile-time contract. MapStruct operates at runtime through generated Java, and it does not automatically honor Kotlin property initializers for fields it ignores or skips during mapping.
 
 #### Caching
 
