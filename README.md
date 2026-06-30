@@ -1,6 +1,8 @@
 # Fancia
 
-Fancia is a social platform connecting people with shared interests for offline, in-person group gatherings and community building.
+![Fancia](https://cdn.fancia.co.uk/static/img/logo-wordmark.svg)
+
+[Fancia](https://www.fancia.co.uk) is a social platform connecting people with shared interests for offline, in-person group gatherings and community building.
 
 ## README
 
@@ -16,10 +18,11 @@ Table of contents
 
 ## Overview
 
-A collection of microservices that provide authentication, user management, interest groups, and event management. The infrastructure is maintained in
-[fancia-infra](https://github.com/fungkinchun/fancia-infra) and [fancia-helm](https://github.com/fungkinchun/fancia-helm). The architecture favors small, focused services with explicit APIs and asynchronous messaging for state synchronization when needed.
+A collection of microservices providing authentication, user management, interest groups, and event management. Infrastructure is managed across [fancia-infra-pipeline](https://github.com/fungkinchun/fancia-infra-pipeline), [fancia-infra](https://github.com/fungkinchun/fancia-infra), and [fancia-helm](https://github.com/fungkinchun/fancia-helm). The architecture favors small, focused services with explicit APIs and asynchronous messaging for eventual state synchronization.
 
-There are  notes for individual project. Please check it out.
+![Architecture Overview](https://cdn.fancia.co.uk/tmp/fancia-infra.png)
+
+Each service repository contains its own README with additional notes and implementation details.
 
 ### List of microservices (OpenAPI)
 
