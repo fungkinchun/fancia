@@ -20,6 +20,8 @@ Table of contents
 
 A collection of microservices providing authentication, user management, interest groups, and event management. Infrastructure is managed across [fancia-infra-pipeline](https://github.com/fungkinchun/fancia-infra-pipeline), [fancia-infra](https://github.com/fungkinchun/fancia-infra), and [fancia-helm](https://github.com/fungkinchun/fancia-helm). The architecture favors small, focused services with explicit APIs and asynchronous messaging for eventual state synchronization.
 
+Notes: A serverless variant of this architecture is available at [fancia-serverless-infra](https://github.com/fungkinchun/fancia-serverless-infra) — purpose-built for cost-efficient, event-driven deployments that eliminate the overhead of managing Kubernetes clusters while retaining the same core functionality.
+
 ![Architecture Overview](https://cdn.fancia.co.uk/tmp/fancia-infra.png)
 
 Each service repository contains its own README with additional notes and implementation details.
