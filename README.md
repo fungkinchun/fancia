@@ -39,7 +39,7 @@ Notes: A serverless variant of this architecture is available at [fancia-serverl
 | **Auth** | OAuth 2.0 / OIDC, PKCE |
 | **Testing** | Kotest, Testcontainers, WireMock, MockMvc |
 
-![Architecture Overview](https://cdn.fancia.co.uk/tmp/fancia-infra.png)
+![Architecture Overview](https://cdn.fancia.co.uk/tmp/fancia-infra.png?v=2)
 
 Each service repository contains its own README with additional notes and implementation details.
 
