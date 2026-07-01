@@ -22,6 +22,23 @@ A collection of microservices providing authentication, user management, interes
 
 Notes: A serverless variant of this architecture is available at [fancia-serverless-infra](https://github.com/fungkinchun/fancia-serverless-infra) — purpose-built for cost-efficient, event-driven deployments that eliminate the overhead of managing Kubernetes clusters while retaining the same core functionality.
 
+### Tech stack (high level)
+
+| Area | Tools |
+|------|-------|
+| **Cloud** | AWS (EKS, VPC, RDS PostgreSQL, S3, ECR, ALB, Route53, CloudFront, Secrets Manager, KMS, IAM) |
+| **Infrastructure as Code** | Terraform |
+| **CI** | AWS CodePipeline, CodeBuild, CodeStar Connections, CodeArtifact |
+| **CD / GitOps** | ArgoCD, Helm, GitHub |
+| **Containers & orchestration** | Docker, Kubernetes |
+| **Platform (K8s)** | AWS Load Balancer Controller, External Secrets Operator, cert-manager, external-dns, KEDA, EBS CSI |
+| **Observability** | Prometheus, Grafana, Loki, Alloy |
+| **Backend** | Kotlin, Spring Boot, Gradle, OpenFeign |
+| **Messaging** | Kafka |
+| **Data** | PostgreSQL (RDS), AWS Secrets Manager |
+| **Auth** | OAuth 2.0 / OIDC, PKCE |
+| **Testing** | Kotest, Testcontainers, WireMock, MockMvc |
+
 ![Architecture Overview](https://cdn.fancia.co.uk/tmp/fancia-infra.png)
 
 Each service repository contains its own README with additional notes and implementation details.
